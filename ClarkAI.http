@@ -1,0 +1,6 @@
+@ClarkAI_HostAddress = http://localhost:5032
+
+GET {{ClarkAI_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
