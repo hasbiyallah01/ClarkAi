@@ -47,6 +47,7 @@ namespace ClarkAI.Core.Entity.Model
 
 
         [Column("plantype")]
+        [EnumDataType(typeof(PlanType))]
         public PlanType PlanType { get; set; }
         [Column("subcriptionstatus")]
         public SubscriptionStatus SubscriptionStatus { get; set; }
