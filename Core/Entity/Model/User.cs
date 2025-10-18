@@ -34,9 +34,9 @@ namespace ClarkAI.Core.Entity.Model
 
         [Column("streakCount")]
         public int StreakCount { get; set; }
-        [Column("paystackAuthorizationCode")]
+        [Column("paystackauthorizationcode")]
         public string? PaystackAuthorizationCode { get; set; }
-        [Column("paystackCustomerCode")]
+        [Column("paystackcustomercode")]
         public string? PaystackCustomerCode { get; set; }
         [Column("image_url")]
         public string ImageUrl { get; set; }
@@ -50,10 +50,11 @@ namespace ClarkAI.Core.Entity.Model
         [EnumDataType(typeof(PlanType))]
         public PlanType PlanType { get; set; }
         [Column("subcriptionstatus")]
+        [EnumDataType(typeof(SubscriptionStatus))]
         public SubscriptionStatus SubscriptionStatus { get; set; }
 
 
-        [Column("nextBillingDate")]
+        [Column("nextbillingdate")]
         public DateTime? NextBillingDate { get; set; }
         [Column("lastStreakDate")]
         public DateTime? LastStreakDate { get; set; }

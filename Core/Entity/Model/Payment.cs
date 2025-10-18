@@ -25,6 +25,7 @@ namespace ClarkAI.Core.Entity.Model
         [Column("currency")]
         public string Currency { get; set; }
         [Column("status")]
+        [EnumDataType(typeof(PaymentStatus))]
         public PaymentStatus Status { get; set; }
         [Column("paymentDate")]
         public DateTime PaymentDate { get; set; }
