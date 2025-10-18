@@ -1,5 +1,6 @@
 ﻿using ClarkAI.Core.Application.Interfaces.Repositories;
 using ClarkAI.Core.Entity.Model;
+using Microsoft.EntityFrameworkCore;
 
 namespace ClarkAI.Infrastructure.Repositories
 {
@@ -11,29 +12,31 @@ namespace ClarkAI.Infrastructure.Repositories
         {
             _context = context;
         }
-        public Task<Payment> AddAsync(Payment payment)
+        public async Task<Payment> AddAsync(Payment payment)
         {
-            throw new NotImplementedException();
+            await _context.Payments.AddAsync(payment);
+            return payment;
         }
 
-        public Task<Payment> GetByReference(string ReferenceId)
+        public async Task<Payment> GetByReference(string ReferenceId)
         {
-            throw new NotImplementedException();
+            return await _context.Payments.FirstOrDefaultAsync(a => a.Reference == ReferenceId);
         }
 
-        public Task<Payment> GetBySubcriptionCode(string subCode)
+        public async Task<Payment> GetBySubcriptionCode(string subCode)
         {
-            throw new NotImplementedException();
+            return await _context.Payments.FirstOrDefaultAsync(a => a.SubscriptionCode == subCode);
         }
 
-        public Task<bool> HasUserPaid(int userId)
+        public async Task<bool> HasUserPaid(int userId)
         {
-            throw new NotImplementedException();
+            return await _context.Payments.AnyAsync(p => p.UserId == userId && p.Status == Core.Entity.Enum.PaymentStatus.Success);
         }
 
-        public Task<Payment> UpdateAsync(Payment payment)
+        public async Task<Payment> UpdateAsync(Payment payment)
         {
-            throw new NotImplementedException();
+            _context.Payments.Update(payment);
+            return payment;
         }
     }
 }
