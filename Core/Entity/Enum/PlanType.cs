@@ -3,8 +3,6 @@
     public enum PlanType
     {
         Free,
-        Basic,
-        Premium,
-        Enterprise
+        Paid,
     }
 }
