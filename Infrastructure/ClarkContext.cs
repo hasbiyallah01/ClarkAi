@@ -32,7 +32,7 @@ namespace ClarkAI.Infrastructure
             modelBuilder.Entity<User>(entity =>
             {
 
-                entity.Property(u => u.PlanType)
+                entity.Property(u => u.Plan)
                 .HasConversion<string>();
 
                 entity.Property(u => u.SubscriptionStatus)

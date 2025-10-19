@@ -8,35 +8,30 @@ namespace ClarkAI.Infrastructure.Repositories
     {
         private readonly ClarkContext _context;
 
-        public PaymentRepository(ClarkContext context)
-        {
-            _context = context;
-        }
-        public async Task<Payment> AddAsync(Payment payment)
+        public async Task AddAsync(Payment payment)
         {
             await _context.Payments.AddAsync(payment);
-            return payment;
+            await _context.SaveChangesAsync();
         }
 
-        public async Task<Payment> GetByReference(string ReferenceId)
+        public async Task<Payment?> GetByReferenceAsync(string reference)
         {
-            return await _context.Payments.FirstOrDefaultAsync(a => a.Reference == ReferenceId);
+            return await _context.Payments.FirstOrDefaultAsync(p => p.Reference == reference);
         }
 
-        public async Task<Payment> GetBySubcriptionCode(string subCode)
+        public async Task<Payment?> GetBySubscriptionCodeAsync(string subCode)
         {
-            return await _context.Payments.FirstOrDefaultAsync(a => a.SubscriptionCode == subCode);
+            return await _context.Payments.FirstOrDefaultAsync(p => p.SubscriptionCode == subCode);
         }
 
+        public async Task UpdateAsync(Payment payment)
+        {
+            _context.Payments.Update(payment);
+            await _context.SaveChangesAsync();
+        }
         public async Task<bool> HasUserPaid(int userId)
         {
             return await _context.Payments.AnyAsync(p => p.UserId == userId && p.Status == Core.Entity.Enum.PaymentStatus.Success);
-        }
-
-        public async Task<Payment> UpdateAsync(Payment payment)
-        {
-            _context.Payments.Update(payment);
-            return payment;
         }
     }
 }

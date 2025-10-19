@@ -35,6 +35,7 @@ builder.Services.AddScoped<IPaystackService,PaystackService>();
 builder.Services.AddTransient<IUserRepository,UserRepository>();
 builder.Services.AddTransient<IPaymentRepository,PaymentRepository>();
 builder.Services.AddTransient<IUnitOfWork,UnitOfWork>();
+builder.Services.AddScoped<PaymentProcessingJob>();
 builder.Services.AddHttpClient();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen();
