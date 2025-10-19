@@ -15,12 +15,11 @@ namespace ClarkAI.Infrastructure.Repositories
         public async Task AddAsync(Payment payment)
         {
             await _context.Payments.AddAsync(payment);
-            await _context.SaveChangesAsync();
         }
 
         public async Task<Payment?> GetByReferenceAsync(string reference)
         {
-            return await _context.Payments.FirstOrDefaultAsync(p => p.Reference == reference);
+            return await _context.Payments.AsNoTracking().FirstOrDefaultAsync(p => p.Reference == reference);
         }
 
         public async Task<Payment?> GetBySubscriptionCodeAsync(string subCode)
@@ -31,7 +30,6 @@ namespace ClarkAI.Infrastructure.Repositories
         public async Task UpdateAsync(Payment payment)
         {
             _context.Payments.Update(payment);
-            await _context.SaveChangesAsync();
         }
         public async Task<bool> HasUserPaid(int userId)
         {

@@ -8,7 +8,7 @@ namespace ClarkAI.Core.Application.Interfaces.Services
         Task<bool> VerifySubscriptionAsync(string reference);
         Task<bool> CancelSubscriptionAsync(string subscriptionCode);
         Task<string> CreateRecurringSubscriptionAsync(int userId, string authCode);
-        Task<BaseResponse<UserResponse>> GetCurrentUser();
+        Task<BaseResponse<int>> GetCurrentUser();
     }
 
     public class PaymentResponse

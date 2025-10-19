@@ -39,12 +39,10 @@ namespace ClarkAI.Infrastructure
                 .HasConversion<string>();
             });
             modelBuilder.Entity<Payment>().Property(p => p.Id).ValueGeneratedOnAdd();
+            modelBuilder.Entity<Payment>()
+                .HasIndex(p => p.Reference)
+                .IsUnique();
 
-            modelBuilder.Entity<Payment>(entity =>
-            {
-                entity.Property(p => p.Status)
-                .HasConversion<string>();   
-            });
         }
     }
 }

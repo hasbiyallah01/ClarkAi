@@ -25,6 +25,11 @@ namespace ClarkAI.Infrastructure.Repositories
             return await _context.Users.FirstOrDefaultAsync(a => a.Id == id);
         }
 
+        public async Task<bool> Exist(int id)
+        {
+            return await _context.Users.AnyAsync(a => a.Id == id);
+        }
+
         public async Task<User> UpdateAsync(User user)
         {
             _context.Users.Update(user);

@@ -8,6 +8,9 @@ using System.Net.Http.Headers;
 using Newtonsoft.Json;
 using System.Text;
 using System.Text.Json.Serialization;
+using ClarkAI.Core.Entity.Enum;
+using Microsoft.EntityFrameworkCore;
+using Npgsql;
 
 namespace ClarkAI.Core.Application.Service
 {
@@ -15,13 +18,15 @@ namespace ClarkAI.Core.Application.Service
     {
         private readonly HttpClient _httpClient;
         private readonly PaystackSettings _paystackSetting;
+        private readonly ILogger<PaystackService> _logger;
         private readonly IPaymentRepository _paymentRepository;
+        private readonly IUnitOfWork _unitOfWork;
         private readonly IUserRepository _userRepository;
         private readonly PayStackApi _paystack; 
         private readonly IHttpContextAccessor _contextAccessor;
 
         public PaystackService(HttpClient httpClient, IOptions<PaystackSettings> paystackSettings, IPaymentRepository paymentRepository, 
-            IUserRepository userRepository, IHttpContextAccessor httpContextAccessor)
+            IUserRepository userRepository, IHttpContextAccessor httpContextAccessor, IUnitOfWork unitOfWork, ILogger<PaystackService> logger)
         {
             _httpClient = httpClient;
             _paystackSetting = paystackSettings.Value;
@@ -33,7 +38,10 @@ namespace ClarkAI.Core.Application.Service
             _httpClient.BaseAddress = new Uri(_paystackSetting.BaseUrl);
             _httpClient.DefaultRequestHeaders.Authorization = new AuthenticationHeaderValue("Bearer", _paystackSetting.SecretKey);
             _httpClient.DefaultRequestHeaders.Accept.Add(new MediaTypeWithQualityHeaderValue("application/json"));
+            _unitOfWork = unitOfWork;
+            _logger = logger;
         }
+
         public async Task<PaymentResponse> InitializePayment(int userId)
         {
             var user = await _userRepository.GetUser(userId);
@@ -41,9 +49,8 @@ namespace ClarkAI.Core.Application.Service
                 throw new Exception("User not found.");
 
             if (user.SubscriptionStatus == Entity.Enum.SubscriptionStatus.Active)
-            {
                 throw new Exception("User already has an active subscription.");
-            }
+
             var trxRequest = new TransactionInitializationRequestModel
             {
                 email = user.Email,
@@ -52,23 +59,46 @@ namespace ClarkAI.Core.Application.Service
 
             var trxResponse = await _paystack.Transactions.InitializeTransaction(trxRequest);
 
-            if (!trxResponse.status) 
+            if (!trxResponse.status)
                 throw new Exception($"Failed to initialize payment: {trxResponse.message}");
 
-            var payment = new Payment
-            {
-                UserId = userId,
-                Email = user.Email,
-                Reference = trxResponse.data.reference,
-                Amount = trxRequest.amount / 100M,
-                Currency = "NGN",
-                Status = Entity.Enum.PaymentStatus.Pending,
-                PaymentDate = DateTime.UtcNow,
-                DateCreated = DateTime.UtcNow,
-                DateModified = DateTime.UtcNow,
-            };
+            var existingPayment = await _paymentRepository.GetByReferenceAsync(trxResponse.data.reference);
 
-            await _paymentRepository.AddAsync(payment);
+            if (existingPayment == null)
+            {
+                var payment = new Payment
+                {
+                    UserId = userId,
+                    Email = user.Email,
+                    Reference = trxResponse.data.reference,
+                    Amount = trxRequest.amount / 100M,
+                    Currency = "NGN",
+                    Status = Entity.Enum.PaymentStatus.Pending,
+                    PaymentDate = DateTime.UtcNow,
+                    DateCreated = DateTime.UtcNow,
+                    DateModified = DateTime.UtcNow,
+                };
+
+
+                try
+                {
+                    await _paymentRepository.AddAsync(payment);
+                    await _unitOfWork.SaveAsync();
+                }
+                catch (DbUpdateException ex)
+                {
+                    if (ex.InnerException is PostgresException pgEx &&
+                        pgEx.SqlState == "23505" && pgEx.ConstraintName == "payments_reference_key")
+                    {
+                        _logger.LogWarning("Duplicate payment reference detected: {Reference}", trxResponse.data.reference);
+                    }
+                    else
+                    {
+                        throw;
+                    }
+                }
+
+            }
 
             return new PaymentResponse
             {
@@ -77,11 +107,12 @@ namespace ClarkAI.Core.Application.Service
             };
         }
 
-        public async Task<BaseResponse<UserResponse>> GetCurrentUser()
+
+        public async Task<BaseResponse<int>> GetCurrentUser()
         {
             var authHeader = _contextAccessor.HttpContext?.Request.Headers["Authorization"].ToString();
             if (string.IsNullOrEmpty(authHeader))
-                return new BaseResponse<UserResponse>
+                return new BaseResponse<int>
                 {
                     IsSuccessful = false,
                     Message = "Unauthorized"
@@ -91,7 +122,7 @@ namespace ClarkAI.Core.Application.Service
 
             var parts = token.Split('.');
             if (parts.Length != 3)
-                return new BaseResponse<UserResponse>
+                return new BaseResponse<int>
                 {
                     IsSuccessful = false,
                     Message = "Invalid Token"
@@ -103,34 +134,28 @@ namespace ClarkAI.Core.Application.Service
 
 
             if (payload == null)
-                return new BaseResponse<UserResponse>
+                return new BaseResponse<int>
                 {
                     IsSuccessful = false,
                     Message = "Invalid token Payload"
                 };
 
             Console.WriteLine(payload.Id);
-            var user = await _userRepository.GetUser(payload.Id);
-            if (user == null)
+            var user = await _userRepository.Exist(payload.Id);
+            if (!user)
             {
-                return new BaseResponse<UserResponse>
+                return new BaseResponse<int>
                 {
                     IsSuccessful = false,
                     Message = "User not found"
                 };
             }
 
-            return new BaseResponse<UserResponse>
+            return new BaseResponse<int>
             {
                 IsSuccessful = true,
-                Message = "User Authenticated",
-                Value = new UserResponse
-                {
-                    Id = payload.Id,
-                    Email = user.Email,
-                    Name = user.Name,
-                    PlanType = user.Plan,
-                }
+                Message = "User succesfully retrieved",
+                Value = payload.Id
             };
         }
         public async Task<string> CreateRecurringSubscriptionAsync(int userId, string authorizationCode)
@@ -142,7 +167,7 @@ namespace ClarkAI.Core.Application.Service
 
             var subResponse = _paystack.Subscriptions.CreateSubscription(
                 user.PaystackCustomerCode,
-                "PLN_8xifaqj55u8ialb",
+                "PLN_uq27mhh0g6y2qw8",
                 authorizationCode,
                 startDate
             );
@@ -176,11 +201,25 @@ namespace ClarkAI.Core.Application.Service
                 DateModified = DateTime.UtcNow
             };
 
-            await _paymentRepository.AddAsync(payment);
-
+            try
+            {
+                await _paymentRepository.AddAsync(payment);
+                await _unitOfWork.SaveAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.InnerException is PostgresException pgEx &&
+                    pgEx.SqlState == "23505" && pgEx.ConstraintName == "payments_reference_key")
+                {
+                    _logger.LogWarning("Duplicate payment reference detected");
+                }
+                else
+                {
+                    throw;
+                }
+            }
             return subscriptionCode;
         }
-
         public async Task<bool> CancelSubscriptionAsync(string subscriptionCode)
         {
             var payload = new { code = subscriptionCode };
@@ -194,31 +233,31 @@ namespace ClarkAI.Core.Application.Service
                 throw new Exception($"Failed to disable subscription: {response.ReasonPhrase} - {responseString}");
 
             dynamic result = JsonConvert.DeserializeObject(responseString);
-            if (result.status == true)
+
+            if (result.status != true)
+                throw new Exception($"Paystack returned error: {result.message}");
+
+            var payment = await _paymentRepository.GetBySubscriptionCodeAsync(subscriptionCode);
+            if (payment == null)
+                throw new Exception("Payment not found for this subscription code");
+
+            payment.Status = Entity.Enum.PaymentStatus.Cancelled;
+            payment.DateModified = DateTime.UtcNow;
+            await _paymentRepository.UpdateAsync(payment);
+            await _unitOfWork.SaveAsync();
+
+            var user = await _userRepository.GetUser(payment.UserId);
+            if (user != null)
             {
-                var payment = await _paymentRepository.GetBySubscriptionCodeAsync(subscriptionCode);
-                if (payment != null)
-                {
-                    payment.Status = Entity.Enum.PaymentStatus.Failed;
-                    payment.DateModified = DateTime.UtcNow;
-                    await _paymentRepository.UpdateAsync(payment);
-                }
-
-                var user = await _userRepository.GetUser(payment.UserId);
-                if (user != null)
-                {
-                    user.Plan = Entity.Enum.PlanType.Free;
-                    user.SubscriptionStatus = Entity.Enum.SubscriptionStatus.Cancelled;
-                    user.UpdatedAt = DateTime.UtcNow;
-                    await _userRepository.UpdateAsync(user);
-                }
-
-                return true;
+                user.Plan = Entity.Enum.PlanType.Free;
+                user.SubscriptionStatus = Entity.Enum.SubscriptionStatus.Cancelled;
+                user.UpdatedAt = DateTime.UtcNow;
+                await _userRepository.UpdateAsync(user);
+                await _unitOfWork.SaveAsync();
             }
 
-            return false;
+            return true;
         }
-
         public async Task<bool> VerifySubscriptionAsync(string reference)
         {
             var response = await _httpClient.GetAsync($"transaction/verify/{reference}");
@@ -232,51 +271,62 @@ namespace ClarkAI.Core.Application.Service
                 throw new Exception($"Verification failed: {result.message}");
 
             var data = result.data;
-
             if (data.status != "success")
                 return false;
 
-            var payment = await _paymentRepository.GetByReferenceAsync(reference);
-            if (payment == null)
-                throw new Exception("Payment record not found in the system.");
+            var payment = await _paymentRepository.GetByReferenceAsync(reference)
+                ?? throw new Exception("Payment record not found in the system.");
 
-            if (payment.Status != Entity.Enum.PaymentStatus.Success)
+            if (payment.Status != PaymentStatus.Success)
             {
-                payment.Status =    Entity.Enum.PaymentStatus.Success;
+                payment.Status = PaymentStatus.Success;
                 payment.DateModified = DateTime.UtcNow;
                 payment.SubscriptionCode = data.subscription?.subscription_code ?? payment.SubscriptionCode;
                 await _paymentRepository.UpdateAsync(payment);
+                await _unitOfWork.SaveAsync();
             }
 
             var user = await _userRepository.GetUser(payment.UserId);
-            if (user != null)
+            if (user == null) return true;
+
+            user.Plan = PlanType.Paid;
+            user.SubscriptionStatus = SubscriptionStatus.Active;
+            user.UpdatedAt = DateTime.UtcNow;
+            user.PaystackAuthorizationCode = data.authorization?.authorization_code ?? user.PaystackAuthorizationCode;
+            user.PaystackCustomerCode = data.customer?.customer_code ?? user.PaystackCustomerCode;
+            user.NextBillingDate = DateTime.UtcNow.AddMonths(1);
+
+            if (string.IsNullOrEmpty(payment.SubscriptionCode))
             {
-                user.Plan = Entity.Enum.PlanType.Paid;
-                user.SubscriptionStatus = Entity.Enum.SubscriptionStatus.Active;
-                user.UpdatedAt = DateTime.UtcNow;
-
-                user.PaystackAuthorizationCode = data.authorization?.authorization_code ?? user.PaystackAuthorizationCode;
-                user.PaystackCustomerCode = data.customer?.customer_code ?? user.PaystackCustomerCode;
-
-                var now = DateTime.UtcNow;
-                user.NextBillingDate = new DateTime(now.Year, now.Month, now.Day, now.Hour, now.Minute, now.Second, DateTimeKind.Utc).AddMonths(1);
-
-                await _userRepository.UpdateAsync(user);
-
-                if (string.IsNullOrEmpty(payment.SubscriptionCode))
+                var sub = await CreateRecurringSubscriptionAsync(user.Id, user.PaystackAuthorizationCode);
+                if (!string.IsNullOrEmpty(sub))
                 {
-                    var sub = await CreateRecurringSubscriptionAsync(user.Id, user.PaystackAuthorizationCode);
-                    if (!string.IsNullOrEmpty(sub))
-                    {
-                        user.SubscriptionStatus = Entity.Enum.SubscriptionStatus.Active;
-                        user.UpdatedAt = DateTime.UtcNow;
-                        await _userRepository.UpdateAsync(user);
-                    }
+                    user.SubscriptionStatus = SubscriptionStatus.Active;
+                    user.UpdatedAt = DateTime.UtcNow;
                 }
             }
 
+            await _userRepository.UpdateAsync(user);
+            try
+            {
+
+                await _unitOfWork.SaveAsync();
+            }
+            catch (DbUpdateException ex)
+            {
+                if (ex.InnerException is PostgresException pgEx &&
+                    pgEx.SqlState == "23505" && pgEx.ConstraintName == "payments_reference_key")
+                {
+                    _logger.LogWarning("Duplicate payment reference detected");
+                }
+                else
+                {
+                    throw;
+                }
+            }
             return true;
         }
+
         private static string Base64UrlDecode(string input)
         {
             string output = input.Replace('-', '+').Replace('_', '/');

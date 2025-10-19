@@ -9,13 +9,13 @@ namespace ClarkAI.Core.Entity.Model
     {
         [Column("id")]
         public int Id { get; set; }
-        [Column("userId")]
+        [Column("userid")]
         public int UserId { get; set; }
         [Column("email")]
         public string Email { get; set; }
         [Column("reference")]
         public string Reference { get; set; }
-        [Column("subscriptionCode")]
+        [Column("subscriptioncode")]
         public string? SubscriptionCode { get; set; } 
         [Column("amount")]
         public decimal Amount { get; set; }        
@@ -24,13 +24,13 @@ namespace ClarkAI.Core.Entity.Model
         [Column("status")]
         [EnumDataType(typeof(PaymentStatus))]
         public PaymentStatus Status { get; set; }   
-        [Column("paymentDate")]
+        [Column("paymentdate")]
         public DateTime PaymentDate { get; set; }
-        [Column("confirmedAt")]
+        [Column("confirmedat")]
         public DateTime? ConfirmedAt { get; set; }   
         private DateTime? _dateModified { get; set; }
 
-        [Column("dateModified", TypeName = "timestamp with time zone")]
+        [Column("datemodified", TypeName = "timestamp with time zone")]
         public DateTime? DateModified
         {
             get => _dateModified;
@@ -38,7 +38,7 @@ namespace ClarkAI.Core.Entity.Model
         }
         private DateTime? _dateCreated;
 
-        [Column("dateCreated", TypeName = "timestamp with time zone")]
+        [Column("datecreated", TypeName = "timestamp with time zone")]
         public DateTime? DateCreated
         {
             get => _dateCreated;

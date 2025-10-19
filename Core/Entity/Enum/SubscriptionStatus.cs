@@ -7,6 +7,7 @@
         Cancelled,
         Pending,
         Expired,
+        Failed,
         None
     }
 }

@@ -23,7 +23,7 @@ builder.Services.AddDbContext<ClarkContext>(options =>
 options.UseNpgsql(builder.Configuration.GetConnectionString("DefaultConnections"),
 npgsqlOptions => npgsqlOptions.EnableRetryOnFailure(
     maxRetryCount : 5,
-    maxRetryDelay : TimeSpan.FromSeconds(60),
+    maxRetryDelay : TimeSpan.FromSeconds(120),
     errorCodesToAdd : null)));
 
 builder.Configuration.AddJsonFile("appsettings.json", optional: false, reloadOnChange: true);
@@ -40,9 +40,9 @@ builder.Services.AddHttpContextAccessor();
 builder.Services.Configure<PaystackSettings>(builder.Configuration.GetSection("Paystack"));
 builder.Services.AddHttpClient<PaystackService>();
 builder.Services.AddScoped<IPaystackService,PaystackService>();
-builder.Services.AddTransient<IUserRepository,UserRepository>();
-builder.Services.AddTransient<IPaymentRepository,PaymentRepository>();
-builder.Services.AddTransient<IUnitOfWork,UnitOfWork>();
+builder.Services.AddScoped<IUserRepository,UserRepository>();
+builder.Services.AddScoped<IPaymentRepository,PaymentRepository>();
+builder.Services.AddScoped<IUnitOfWork,UnitOfWork>();
 builder.Services.AddScoped<PaymentProcessingJob>();
 builder.Services.AddHttpClient();
 

@@ -8,5 +8,6 @@ namespace ClarkAI.Core.Application.Interfaces.Repositories
         Task<User> GetUser(int id);
         Task<User> UpdateAsync(User user);
         Task<User> GetAsync(Expression<Func<User, bool>> expression);
+        Task<bool> Exist(int id);
     }
 }
