@@ -1,4 +1,6 @@
-﻿namespace ClarkAI.Core.Application.Interfaces.Services
+﻿using ClarkAI.Core.Entity.Model;
+
+namespace ClarkAI.Core.Application.Interfaces.Services
 {
     public interface IPaystackService
     {
@@ -6,8 +8,7 @@
         Task<bool> VerifySubscription (string reference);
         Task<bool> CancelSubscriptionAsync(string subscriptionCode);
         Task<string> CreateRecurringSubscriptionAsync(int userId, string authCode);
-
-
+        Task<BaseResponse<UserResponse>> GetCurrentUser();
     }
 
     public class PaymentResponse

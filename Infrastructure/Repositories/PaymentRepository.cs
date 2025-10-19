@@ -7,6 +7,10 @@ namespace ClarkAI.Infrastructure.Repositories
     public class PaymentRepository : IPaymentRepository
     {
         private readonly ClarkContext _context;
+        public PaymentRepository(ClarkContext context)
+        {
+            _context = context;
+        }
 
         public async Task AddAsync(Payment payment)
         {
