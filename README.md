@@ -32,11 +32,13 @@ I implemented the **payment subsystem**, including:
 * Handling duplicate reference conflicts via Postgres constraints
 * Asynchronous transaction safety with Unit of Work
 * API endpoints for initializing and verifying payments
+* Webhook that verifies the payment after payment automatically
+* And a job that runs
 
 ---
 
 ## 🎥 Demo Video
 
 Watch the full demo here:
-[▶️ View on Google Drive](https://drive.google.com/file/d/1RYmz3m9vWptCPeVYpAFmfTQC0f5Xcaku/view?usp=sharing)
+[View on Google Drive](https://drive.google.com/file/d/1ORATdmL-N5CY347z-KG3wGNetKJHs8OE/view?usp=sharing)
 
