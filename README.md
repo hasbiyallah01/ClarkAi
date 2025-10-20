@@ -17,12 +17,11 @@ The ClarkAI Payment Module does all processes related to payment initialization,
 
 ## Tech Stack
 
-**Language**: C#
-**Framework**: .NET 8 Web API
-**Database**: PostgreSQL
-**Payment Gateway**: Paystack
-**Architecture**: Repository + Service + Unit of Work Pattern
-**Frontend**: [ClarkAI Frontend (Next.js)](https://github.com/segunojo1/clarkai-fe)
+* **Language**: C#
+* **Framework**: .NET 8 Web API
+* **Database**: PostgreSQL
+* **Payment Gateway**: Paystack
+* **Architecture**: Onion
 
 ## My Contribution
 
