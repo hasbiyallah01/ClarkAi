@@ -193,7 +193,7 @@ namespace ClarkAI.Core.Application.Service
                 Email = user.Email,
                 Reference = subscriptionCode,
                 SubscriptionCode = subscriptionCode,
-                Amount = 100000, 
+                Amount = 1500, 
                 Currency = "NGN",
                 Status = Entity.Enum.PaymentStatus.Pending,
                 PaymentDate = DateTime.UtcNow,
