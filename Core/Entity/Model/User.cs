@@ -88,22 +88,14 @@ namespace ClarkAI.Core.Entity.Model
         public string PublicKey { get; set; }       
         public string BaseUrl { get; set; }         
         public string PlanCode { get; set; }        
-        public string WebhookSecret { get; set; }   
+        public string WebhookSecret { get; set; }
     }
 
-
-    public class UserResponse
+    public class CloudflareR2Setting
     {
-        public int Id {  get; set; }
-        public string Name { get; set; }
-        public string Email { get; set; }
-        public PlanType PlanType { get; set; }
-    }
-
-    public class BaseResponse <T>
-    {
-        public string Message { get; set; }
-        public bool IsSuccessful { get; set; }
-        public T Value { get; set; }
+        public string Endpoint { get; set; }
+        public string AccesskeyId { get; set; }
+        public string SecretAccessKey { get; set; }
+        public string EndpointDomain { get; set; }
     }
 }

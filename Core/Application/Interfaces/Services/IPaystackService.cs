@@ -1,4 +1,5 @@
 ﻿using ClarkAI.Core.Entity.Model;
+using ClarkAI.Models;
 
 namespace ClarkAI.Core.Application.Interfaces.Services
 {

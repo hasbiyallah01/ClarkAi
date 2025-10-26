@@ -14,6 +14,26 @@ namespace ClarkAI.Infrastructure.Repositories
             _context = context;
         }
 
+        public async Task<User> AddAsnyc(User user)
+        {
+            await _context.Set<User>()
+                .AddAsync(user);
+            return user;
+        }
+
+        public async Task<bool> ExistAsync(string email)
+        {
+            return await _context.Users.AnyAsync(x => x.Email == email);
+        }
+
+        public async Task<bool> ExistAsync(string email,int id)
+        {
+            return await _context.Users.AnyAsync(x => x.Email == email && x.Id == id);
+        }
+        public async Task<bool> ExistAsync(int id)
+        {
+            return await _context.Users.AnyAsync(x => x.Id == id);
+        }
         public async Task<User> GetAsync(Expression<Func<User, bool>> expression)
         {
             return await _context.Set<User>()

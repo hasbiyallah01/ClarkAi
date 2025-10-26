@@ -11,6 +11,7 @@ using System.Text.Json.Serialization;
 using ClarkAI.Core.Entity.Enum;
 using Microsoft.EntityFrameworkCore;
 using Npgsql;
+using ClarkAI.Models;
 
 namespace ClarkAI.Core.Application.Service
 {
@@ -106,8 +107,6 @@ namespace ClarkAI.Core.Application.Service
                 Reference = trxResponse.data.reference
             };
         }
-
-
         public async Task<BaseResponse<int>> GetCurrentUser()
         {
             var authHeader = _contextAccessor.HttpContext?.Request.Headers["Authorization"].ToString();
@@ -326,7 +325,6 @@ namespace ClarkAI.Core.Application.Service
             }
             return true;
         }
-
         private static string Base64UrlDecode(string input)
         {
             string output = input.Replace('-', '+').Replace('_', '/');
